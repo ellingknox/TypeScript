@@ -464,6 +464,19 @@ namespace ts.textChanges {
             return Debug.failBadSyntaxKind(node); // We haven't handled this kind of node yet -- add it
         }
 
+        //!
+        public insertName(sourceFile: SourceFile, node: FunctionExpression | ClassExpression | ArrowFunction, name: string) {
+            Debug.assert(!node.name);
+            if (node.kind === SyntaxKind.ArrowFunction) {
+                //tricky
+                //() => {} --> function f() {}
+                throw "todo";
+            } else {
+                const pos = ts.findChildOfKind(node, node.kind === SyntaxKind.FunctionExpression ? SyntaxKind.FunctionKeyword : SyntaxKind.ClassKeyword, sourceFile)!.end;
+                this.insertNodeAt(sourceFile, pos, createIdentifier(name), { prefix: " " });
+            }
+        }
+
         /**
          * This function should be used to insert nodes in lists when nodes don't carry separators as the part of the node range,
          * i.e. arguments in arguments lists, parameters in parameter lists etc.
@@ -638,7 +651,7 @@ namespace ts.textChanges {
                 // order changes by start position
                 const normalized = stableSort(changesInFile, (a, b) => a.range.pos - b.range.pos);
                 // verify that change intervals do not overlap, except possibly at end points.
-                for (let i = 0; i < normalized.length - 2; i++) {
+                for (let i = 0; i < normalized.length - 1; i++) {
                     Debug.assert(normalized[i].range.end <= normalized[i + 1].range.pos, "Changes overlap", () =>
                         `${JSON.stringify(normalized[i].range)} and ${JSON.stringify(normalized[i + 1].range)}`);
                 }
